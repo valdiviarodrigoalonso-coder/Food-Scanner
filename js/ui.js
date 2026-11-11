@@ -70,9 +70,21 @@ document.addEventListener('keydown', (ev) => {
 
 // ----- keep sheets and toasts above the on-screen keyboard (iOS does not resize the page for it) -----
 const vv = window.visualViewport;
+const isTyping = () => {
+  const a = document.activeElement;
+  return !!a && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a.isContentEditable);
+};
 function syncViewport() {
-  if (!vv || Math.abs(vv.scale - 1) > 0.01) return; // ignore pinch-zoom
   const st = document.documentElement.style;
+  // No keyboard on screen: drop the overrides so the layout follows the real screen size.
+  // (Measurements taken while the phone is turning are wrong, and used to stick after rotating back.)
+  if (!vv || !isTyping()) {
+    st.removeProperty('--vvh');
+    st.removeProperty('--vvtop');
+    st.setProperty('--kbh', '0px');
+    return;
+  }
+  if (Math.abs(vv.scale - 1) > 0.01) return; // ignore pinch-zoom
   st.setProperty('--vvh', vv.height + 'px');
   st.setProperty('--vvtop', vv.offsetTop + 'px');
   st.setProperty('--kbh', Math.max(0, window.innerHeight - vv.height - vv.offsetTop) + 'px');
@@ -80,8 +92,32 @@ function syncViewport() {
 if (vv) {
   vv.addEventListener('resize', syncViewport);
   vv.addEventListener('scroll', syncViewport);
-  syncViewport();
 }
+window.addEventListener('resize', syncViewport);
+document.addEventListener('focusin', () => setTimeout(syncViewport, 60));
+document.addEventListener('focusout', () => setTimeout(syncViewport, 120));
+syncViewport();
+
+// ----- turning the phone -----
+// iOS can leave the page zoomed in, or laid out for the old screen shape, after portrait → landscape → portrait.
+// Briefly pinning the zoom to 1 makes Safari recalculate the page; then we re-measure a few times while it settles.
+const vpMeta = document.querySelector('meta[name="viewport"]');
+const vpBase = vpMeta ? vpMeta.getAttribute('content') : '';
+let vpTimer = null;
+function resetZoom() {
+  if (!vpMeta) return;
+  vpMeta.setAttribute('content', vpBase + ', maximum-scale=1');
+  clearTimeout(vpTimer);
+  vpTimer = setTimeout(() => vpMeta.setAttribute('content', vpBase), 400);
+}
+function afterRotate() {
+  document.documentElement.scrollLeft = 0;
+  document.body.scrollLeft = 0;
+  resetZoom();
+  for (const ms of [0, 150, 400, 800]) setTimeout(syncViewport, ms);
+}
+window.addEventListener('orientationchange', afterRotate);
+if (window.screen && screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener('change', afterRotate);
 
 // ----- bottom sheets -----
 const stack = [];

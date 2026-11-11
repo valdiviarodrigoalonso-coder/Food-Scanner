@@ -45,7 +45,7 @@ export function amountLabel(e) {
     const q = fmt(e.qty, 2);
     return `${q} × ${e.portionLabel.replace(/^1 /, '')} · ${fmtAmount(e.amount, e.food.basis, units())}`;
   }
-  return fmtAmount(e.amount, e.food.basis, units());
+  return (e.est ? '≈ ' : '') + fmtAmount(e.amount, e.food.basis, units()) + (e.est ? ' · photo estimate' : '');
 }
 
 export function foodRow(food, i, { sub, act = 'pk-open', right } = {}) {

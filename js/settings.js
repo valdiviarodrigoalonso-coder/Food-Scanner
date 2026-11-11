@@ -5,6 +5,7 @@ import { dbSize } from './fooddb.js';
 import { S, APP_NAME, saveSettings, exportData, importData, wipeAll, seedStarters } from './state.js';
 import { refresh, imperial, coach, say } from './parts.js';
 import { COACHES } from './coach.js';
+import { claudeKeyHelp } from './photo.js';
 import { storageMode } from './store.js';
 
 const GOAL_FIELDS = [
@@ -97,6 +98,12 @@ export function renderSettings() {
       <p class="fine">Barcode scans and brand searches check two databases. Open Food Facts needs nothing. The USDA branded database (US products, label data from the manufacturers) only allows about 10 lookups an hour without a key. A personal key is free and raises that to 1,000 an hour.</p>
       <ol class="steps"><li>Open <a href="https://fdc.nal.usda.gov/api-key-signup" target="_blank" rel="noopener">fdc.nal.usda.gov/api-key-signup</a> and fill in the short form.</li><li>The key arrives by email right away.</li><li>Paste it here.</li></ol>
       <label class="field"><span>Your USDA API key</span><input type="text" data-in="usda-key" value="${s.usdaKey}" placeholder="using the shared demo key" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🍽️ Photo estimates <small>optional · pay per photo</small></div>
+      <p class="fine">Take a photo of a plate you can’t weigh and get an estimated weight for each part. Reading the photo uses Anthropic’s Claude with your own key:</p>
+      ${claudeKeyHelp()}
     </div>
 
     <div class="card">

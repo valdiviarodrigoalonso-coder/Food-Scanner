@@ -9,6 +9,7 @@ import { initDB, searchDB, getById, searchList } from '../js/fooddb.js';
 import { PINS, PIN_ALIASES } from '../js/pins.js';
 import { gtinForms, upcEtoA } from '../js/api.js';
 import { COACHES, LINES, lineFor, getCoach } from '../js/coach.js';
+import { SIDES, sideRef, PHOTO_SCHEMA, buildSystemPrompt, buildUserText, parseEstimate } from '../js/photoai.js';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => JSON.parse(fs.readFileSync(path.join(root, p), 'utf8'));
@@ -299,6 +300,74 @@ test('streak counts back from today, survives an unlogged today', () => {
   assert.equal(N.streak(['2026-11-09', '2026-11-10'], '2026-11-11').current, 2);
   assert.equal(N.streak(['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-08'], '2026-11-11').current, 0);
   assert.equal(N.streak(['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-08'], '2026-11-11').best, 3);
+});
+
+// ----- photo estimates -----
+test('every photo side points at a complete USDA food', () => {
+  const seen = new Set();
+  for (const [id, label] of SIDES) {
+    assert.ok(!seen.has(id), 'duplicate side ' + id);
+    seen.add(id);
+    const f = getById(id);
+    assert.ok(f, 'missing food ' + id + ' (' + label + ')');
+    for (const k of ['kcal', 'protein', 'carbs', 'fat', 'sodium']) assert.ok(f.per100[k] != null, label + ' has no ' + k);
+  }
+});
+test('photo prompt lists every dish and side the app can calculate', () => {
+  const p = buildSystemPrompt(dishes.dishes);
+  for (const d of dishes.dishes) assert.ok(p.includes(d.id + ' | ' + d.name), 'prompt is missing ' + d.id);
+  for (const [id] of SIDES) assert.ok(p.includes(sideRef(id) + ' | '), 'prompt is missing side ' + id);
+  assert.ok(!/undefined|NaN/.test(p));
+  assert.equal(buildUserText(''), 'Estimate this plate.');
+  assert.ok(buildUserText('  big plate ').includes('"big plate"'));
+  assert.equal(buildUserText('x'.repeat(900)).length < 400, true);
+});
+test('photo schema is strict (every field required, no extras)', () => {
+  const item = PHOTO_SCHEMA.properties.items.items;
+  assert.deepEqual([...item.required].sort(), Object.keys(item.properties).sort());
+  assert.equal(item.additionalProperties, false);
+  assert.deepEqual([...PHOTO_SCHEMA.required].sort(), Object.keys(PHOTO_SCHEMA.properties).sort());
+  assert.equal(PHOTO_SCHEMA.additionalProperties, false);
+});
+test('photo reply: good items are kept, tidied and rounded', () => {
+  const refs = new Set(['pe:aji-de-gallina', sideRef(173424)]);
+  const r = parseEstimate('Here you go: ' + JSON.stringify({
+    items: [
+      { name: ' Ají de gallina with rice ', ref: 'pe:aji-de-gallina', grams: 412, low: 330, high: 498, confidence: 'medium', note: 'Dinner plate, piled.' },
+      { name: 'Extra egg', ref: sideRef(173424), grams: 26, low: 22, high: 29, confidence: 'high', note: '' },
+    ],
+    scale_cue: 'fork', note: '',
+  }), refs);
+  assert.equal(r.items.length, 2);
+  assert.deepEqual(r.items[0], { name: 'Ají de gallina with rice', ref: 'pe:aji-de-gallina', grams: 410, low: 330, high: 500, confidence: 'medium', note: 'Dinner plate, piled.' });
+  assert.equal(r.items[1].grams, 26);
+  assert.equal(r.scaleCue, 'fork');
+});
+test('photo reply: bad data is dropped or repaired, never trusted', () => {
+  const refs = new Set(['pe:lomo-saltado']);
+  const r = parseEstimate(JSON.stringify({
+    items: [
+      { name: 'Made-up food', ref: 'pe:not-real', grams: 200, low: 500, high: 100, confidence: 'certain', note: 5 },
+      { name: 'Negative', ref: '', grams: -40, low: 1, high: 2, confidence: 'low', note: '' },
+      { name: 'Absurd', ref: '', grams: 99999, low: 1, high: 2, confidence: 'low', note: '' },
+      { name: '', ref: '', grams: 100, low: 80, high: 120, confidence: 'low', note: '' },
+      { name: 'Text weight', ref: '', grams: 'lots', low: 1, high: 2, confidence: 'low', note: '' },
+      null,
+    ],
+  }), refs);
+  assert.equal(r.items.length, 1);
+  const it = r.items[0];
+  assert.equal(it.ref, '', 'an unknown ref must not be passed on');
+  assert.equal(it.grams, 200);
+  assert.ok(it.low <= it.grams && it.high >= it.grams, 'range must contain the estimate');
+  assert.equal(it.confidence, 'low');
+  assert.equal(it.note, '');
+  assert.deepEqual(parseEstimate('{"items":[],"scale_cue":"none visible","note":"No food in the photo."}', refs).items, []);
+  assert.equal(parseEstimate('{"items":"nope"}', refs).items.length, 0);
+  assert.throws(() => parseEstimate('Sorry, I cannot help.', refs));
+  assert.throws(() => parseEstimate('{broken', refs));
+  const many = parseEstimate(JSON.stringify({ items: Array.from({ length: 40 }, (_, i) => ({ name: 'x' + i, ref: '', grams: 50, low: 40, high: 60, confidence: 'low', note: '' })) }), refs);
+  assert.equal(many.items.length, 12);
 });
 
 console.log('\nPeruvian plates (estimates, one regular plate):\n' + table.join('\n'));

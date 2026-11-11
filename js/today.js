@@ -141,7 +141,7 @@ export function renderToday() {
     ${SLOTS.map((s) => mealSection(s, day, prevDay))}
     ${day.entries.length
       ? html`<button class="btn ${day.done ? 'ghost' : 'primary'} wide finish" data-act="finish">${day.done ? 'Reopen this day' : '✅ Finish day'}</button>`
-      : html`<div class="quick-grid two"><button class="quick" data-act="scan-now"><span>📷</span>Scan a barcode</button><button class="quick" data-act="add" data-slot=""><span>🔍</span>Search foods</button></div>`}
+      : html`<div class="quick-grid"><button class="quick" data-act="scan-now"><span>📷</span>Scan a barcode</button><button class="quick" data-act="photo-now"><span>🍽️</span>Photo of my plate</button><button class="quick" data-act="add" data-slot=""><span>🔍</span>Search foods</button></div>`}
     <p class="fine center">Numbers marked ≥ or ⚠ include foods with missing data. Tap any meter to see where it comes from.</p>
   </div>`;
 }

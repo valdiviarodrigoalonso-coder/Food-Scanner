@@ -193,7 +193,7 @@ function fsUpdate() {
 }
 
 /** Celebrate when this entry pushes protein over the goal, or starts/extends the streak. */
-function celebrate(date, before) {
+export function celebrate(date, before) {
   const after = totals(getDay(date).entries);
   const g = S.settings.goals;
   if (date === today()) {
@@ -239,12 +239,13 @@ on({
       return;
     }
     if (mode === 'pick') {
+      const { sheet } = fs; // onPick may close sheets itself, which clears `fs`
       opts.onPick(food, a);
-      fs.sheet.close();
+      sheet.close();
       return;
     }
     if (mode === 'edit') {
-      updateEntry(date, opts.entry.id, { ...a, slot, food: snapshot(food) });
+      updateEntry(date, opts.entry.id, { ...a, slot, food: snapshot(food), est: false }); // an amount typed in by hand is no longer a photo estimate
       closeAllSheets();
       refresh();
       toast('Updated ✔', 'good');
@@ -406,10 +407,11 @@ function pkRender() {
       ${list.length ? section('My meals', list.map(rowMeal)) : empty('No meals yet', 'Build a meal once (overnight oats, your usual lunch…) and log it in one tap.', '🍳')}`;
   } else if (pk.tab === 'mom') {
     const list = searchList(S.dishes.dishes, q, 80);
-    out = html`<p class="fine pad">Typical Peruvian home plates, built from USDA ingredients. Estimates — tap one to pick the plate size or weigh it.</p>${section('Peruvian dishes', list.map(rowDish))}`;
+    out = html`<button class="btn ghost wide" data-act="pk-photo">🍽️ Don’t know the amount? Estimate it from a photo</button><p class="fine pad">Typical Peruvian home plates, built from USDA ingredients. Estimates — tap one to pick the plate size or weigh it.</p>${section('Peruvian dishes', list.map(rowDish))}`;
   } else if (!q) {
-    out = html`<div class="quick-grid">
+    out = html`<div class="quick-grid two">
         <button class="quick" data-act="pk-scan"><span>📷</span>Scan barcode</button>
+        ${pk.mode === 'log' ? html`<button class="quick" data-act="pk-photo"><span>🍽️</span>Photo of my plate</button>` : ''}
         <button class="quick" data-act="pk-quick"><span>⚡</span>Quick add</button>
         <button class="quick" data-act="pk-create"><span>✏️</span>Create food</button>
       </div>
@@ -452,6 +454,7 @@ async function runOnline(q) {
   });
 }
 
+export const currentPickerOpts = () => (pk ? pickerOpts() : {});
 function pickerOpts() {
   return { mode: pk.mode, date: pk.date, slot: pk.slot, onPick: pk.onPick };
 }

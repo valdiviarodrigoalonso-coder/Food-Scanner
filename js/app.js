@@ -9,6 +9,7 @@ import { renderMeals } from './meals.js';
 import { renderProgress } from './progress.js';
 import { renderSettings, openWelcome } from './settings.js';
 import { openPicker } from './food.js';
+import './photo.js';
 
 const VIEWS = { today: renderToday, meals: renderMeals, progress: renderProgress, settings: renderSettings };
 

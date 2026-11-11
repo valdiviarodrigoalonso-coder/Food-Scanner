@@ -14,6 +14,11 @@ Everything you log stays on your phone.
 - **Meals**: save the ingredients of something you make often and log it in one tap.
 - **Peruvian dishes**: 30 home dishes with plate-size buttons.
 - **Metric / imperial** switch in Settings.
+- **Photo estimates**: photograph a plate you can't weigh (ají de gallina, papa a la huancaína…) and get an
+  estimated weight for each part, which you correct and then log. The photo is read by Anthropic's Claude using
+  your own API key (pay per photo, no subscription; set it in Settings). The AI only names the food and estimates
+  grams — the nutrition numbers still come from the app's own data. Entries are marked "≈ photo estimate".
+  Code: `js/photoai.js` (request + checks) and `js/photo.js` (screen).
 - **Four animal coaches** to pick from at the start (and switch any time in Settings): Paco the Llama
   (easygoing), Leo the Lion (tough love), Olive the Owl (analytical) and Zorro the Fox (playful).
   Same numbers, different voice. Their lines live in `js/coach.js`.

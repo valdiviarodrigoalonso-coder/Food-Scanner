@@ -31,7 +31,7 @@ export const GOAL_MODE = { kcal: 'target', protein: 'min', carbs: 'target', fat:
 
 export const S = {
   ready: false,
-  settings: { units: localeUnits(), goals: { ...DEFAULT_GOALS }, sodiumMode: 'max', coach: 'llama', showDate: '', showName: '', usdaKey: '', onboarded: false, seeded: false },
+  settings: { units: localeUnits(), goals: { ...DEFAULT_GOALS }, sodiumMode: 'max', coach: 'llama', showDate: '', showName: '', usdaKey: '', claudeKey: '', onboarded: false, seeded: false },
   days: {},
   myFoods: [],
   meals: [],
@@ -99,6 +99,7 @@ export function addEntry(date, slot, food, a) {
     entry.portionLabel = a.portionLabel;
     entry.portionGrams = a.portionGrams;
   }
+  if (a.est) entry.est = true; // weight came from a photo estimate, not a scale
   day.entries.push(entry);
   touchRecent(food, a);
   saveDay(date);
@@ -238,12 +239,13 @@ export function setWeight(date, kg) {
 
 // ----- backup -----
 export function exportData() {
-  return { app: APP_NAME, version: 1, exported: new Date().toISOString(), settings: S.settings, days: S.days, myFoods: S.myFoods, meals: S.meals, weights: S.weights, recents: S.recents };
+  return { app: APP_NAME, version: 1, exported: new Date().toISOString(), settings: { ...S.settings, claudeKey: '' }, days: S.days, myFoods: S.myFoods, meals: S.meals, weights: S.weights, recents: S.recents };
 }
 export async function importData(data) {
   if (!data || !data.app || !data.settings || !data.days || typeof data.days !== 'object') throw new Error('That file is not a ' + APP_NAME + ' backup.');
   await kv.clearAll();
-  S.settings = { ...S.settings, ...data.settings, goals: { ...DEFAULT_GOALS, ...((data.settings && data.settings.goals) || {}) } };
+  const claudeKey = S.settings.claudeKey || ''; // a paid key never travels in a backup file; keep the one on this device
+  S.settings = { ...S.settings, ...data.settings, claudeKey, goals: { ...DEFAULT_GOALS, ...((data.settings && data.settings.goals) || {}) } };
   S.days = data.days || {};
   S.myFoods = data.myFoods || [];
   S.meals = data.meals || [];

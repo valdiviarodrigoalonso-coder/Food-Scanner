@@ -1,9 +1,9 @@
 // Service worker: makes the app open instantly and work offline once installed.
 // Bump VERSION whenever app files change so phones pick up the new copy.
-const VERSION = 'sk-v4';
+const VERSION = 'sk-v5';
 const CORE = [
-  './', 'index.html', 'styles.css?v=4', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
-  'js/app.js?v=4', 'js/ui.js', 'js/store.js', 'js/state.js', 'js/nutrition.js', 'js/coach.js', 'js/fooddb.js', 'js/pins.js', 'js/parts.js', 'js/api.js', 'js/scanner.js',
+  './', 'index.html', 'styles.css?v=5', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
+  'js/app.js?v=5', 'js/ui.js', 'js/store.js', 'js/state.js', 'js/nutrition.js', 'js/coach.js', 'js/photo.js', 'js/photoai.js', 'js/fooddb.js', 'js/pins.js', 'js/parts.js', 'js/api.js', 'js/scanner.js',
   'js/food.js', 'js/meals.js', 'js/today.js', 'js/progress.js', 'js/settings.js', 'data/foods.json?v=1', 'data/dishes.json?v=1',
 ];
 const CDN = ['cdn.jsdelivr.net', 'fastly.jsdelivr.net'];
